@@ -1,0 +1,24 @@
+{
+  "name": "deck-neo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Stream Deck Neo as a dedicated Claude Code cockpit",
+  "scripts": {
+    "start": "tsx daemon/src/index.ts",
+    "demo": "tsx scripts/demo.ts",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@elgato-stream-deck/node": "^7.6.3",
+    "@napi-rs/canvas": "^1.0.3",
+    "chokidar": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.5",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

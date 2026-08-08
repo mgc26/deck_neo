@@ -1,0 +1,33 @@
+#!/bin/zsh
+# claude-wrapped — transparent deck adoption for `claude`.
+#
+# Aliased as `claude` in ~/.zshrc. Interactive sessions start inside tmux (via cc)
+# so they are deck-controllable; non-interactive and utility invocations pass
+# straight through to the real binary, because tmux attach needs a TTY that a
+# pipeline / script / `$(...)` does not have.
+#
+# Passthrough (NOT a session):
+#   * a bare-word first arg = a claude subcommand (mcp, config, doctor, ...)
+#   * -p / --print (piped output), --version, -h / --help (no TTY, must not tmux)
+# Everything else — no args, a positional prompt, interactive flags like
+# --dangerously-skip-permissions or --model — starts a deck session.
+
+emulate -L zsh
+set -u
+
+# Known non-session subcommands (first bare word).
+case "${1:-}" in
+  mcp|config|doctor|update|install|agents|migrate-installer|setup-token|help)
+    exec command claude "$@" ;;
+esac
+
+# Non-interactive / utility flags anywhere on the line.
+for a in "$@"; do
+  case "$a" in
+    -p|--print|--version|-h|--help) exec command claude "$@" ;;
+  esac
+done
+
+# Interactive: start a deck-controllable session. `--` tells cc "no session
+# name, pass everything to claude" so a positional prompt is preserved.
+exec "${0:A:h}/cc" -- "$@"

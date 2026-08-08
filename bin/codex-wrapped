@@ -1,0 +1,26 @@
+#!/bin/zsh
+# codex-wrapped — transparent deck adoption for `codex`.
+#
+# Aliased as `codex` in ~/.zshrc. Interactive sessions start inside tmux (via cx)
+# so they are deck-controllable; non-interactive and utility invocations pass
+# straight through to the real binary (a pipeline / script has no TTY to attach).
+#
+# Passthrough: a bare-word subcommand (exec, resume, login, mcp, app, ...) or
+# --version / -h / --help. Everything else starts a deck session.
+
+emulate -L zsh
+set -u
+
+case "${1:-}" in
+  exec|e|resume|review|login|logout|mcp|app|app-server|remote-control|completion|\
+  sandbox|apply|a|update|debug|doctor|archive|delete|unarchive|help)
+    exec command codex "$@" ;;
+esac
+
+for a in "$@"; do
+  case "$a" in
+    --version|-h|--help) exec command codex "$@" ;;
+  esac
+done
+
+exec "${0:A:h}/cx" -- "$@"

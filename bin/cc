@@ -1,0 +1,77 @@
+#!/bin/zsh
+# cc [name] [claude args...] — start or attach a tmux session running Claude Code.
+#
+# Run it in a project directory exactly as you would run `claude`. Naming:
+#   * A first argument NOT starting with '-' is an explicit session name; that name
+#     is attached-or-created (re-run to reconnect to that exact session).
+#   * With no name, the session is named after the directory. A second `cc` in the
+#     same directory does NOT re-view the first — it reconnects only if the base
+#     session is sitting unattached (you closed its terminal), otherwise it starts a
+#     fresh, distinct session (dir, dir-2, dir-3, ...). This is what lets you run
+#     several agents in one project, each its own deck key.
+# Everything after the name passes through to claude (`cc --dangerously-skip-permissions`);
+# standing flags live in DECKNEO_CLAUDE_ARGS. Running inside tmux is what lets the Deck
+# Neo daemon send keys to this session.
+
+emulate -L zsh
+set -u
+
+# Already inside tmux (e.g. `claude` is aliased to the wrapper): no nesting —
+# run the real binary in place; this session is already deck-controllable.
+# (Q) strips the quoting (z) leaves behind, so DECKNEO_CLAUDE_ARGS can carry a
+# flag whose value has a space, e.g. --model "sonnet 4".
+if [[ -n "${TMUX:-}" ]]; then
+  local -a inherited
+  inherited=(${(Q)${(z)${DECKNEO_CLAUDE_ARGS:-}}})
+  exec command claude "${inherited[@]}" "$@"
+fi
+
+# Strip everything tmux can't target: '.'/':' and the glob metacharacters
+# * ? [ ] = (a name containing them is unmatchable by -t even with an exact prefix).
+sanitize() { local s=${1//[][*?.:=]/_}; [[ -z "$s" ]] && s=session; print -r -- "$s"; }
+
+local explicit=0 name
+if [[ $# -gt 0 && ${1} == "--" ]]; then
+  # `--` = "no name, everything after is claude args" (used by the claude wrapper
+  # so a positional prompt reaches claude instead of being read as a name).
+  shift; name=$(sanitize "${PWD:t}")
+elif [[ $# -gt 0 && ${1} != -* ]]; then
+  name=$(sanitize "$1"); explicit=1; shift
+else
+  name=$(sanitize "${PWD:t}")
+fi
+
+local -a standing
+standing=(${(Q)${(z)${DECKNEO_CLAUDE_ARGS:-}}})
+
+# True when tmux session $1 exists with at least one attached client. Fails
+# CLOSED: if the query errors we assume attached, so a transient tmux hiccup
+# makes cc start a fresh session rather than risk re-viewing a live one.
+# '=' forces exact-match targeting (no prefix/glob), so `deck` never resolves
+# to a different session `deck_neo`.
+attached() {
+  local n
+  # `=NAME:` — the '=' forces exact session match and the trailing ':' selects a
+  # PANE target (display-message is pane-level; a bare '=NAME' returns empty and
+  # would make this fail-closed-always, killing the reconnect path).
+  n=$(tmux display-message -p -t "=$1:" '#{session_attached}' 2>/dev/null) || return 0
+  [[ -z "$n" || "$n" != 0 ]]
+}
+
+if (( explicit )); then
+  # Named session: attach-or-create that exact name (deliberate reconnect).
+  exec tmux new-session -A -s "$name" claude "${standing[@]}" "$@"
+fi
+
+# No name: reconnect to an unattached base, else create the first free distinct name.
+local base=$name candidate n=1
+while :; do
+  candidate=$base; (( n > 1 )) && candidate="${base}-${n}"
+  if ! tmux has-session -t "=$candidate" 2>/dev/null; then
+    exec tmux new-session -s "$candidate" claude "${standing[@]}" "$@"
+  elif ! attached "$candidate"; then
+    exec tmux attach-session -t "=$candidate"   # orphaned session: reconnect
+  fi
+  (( n++ ))
+  (( n > 20 )) && { print -u2 "cc: too many sessions for $base"; exit 1; }
+done

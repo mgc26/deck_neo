@@ -1,0 +1,71 @@
+#!/bin/zsh
+# cxa [session-id] — pull a ChatGPT-app Codex thread into tmux, deck-controllable.
+#
+# App threads live in the UI with no terminal, so the deck can only watch them.
+# The Codex CLI shares ~/.codex with the app, and `codex resume <id>` continues
+# an app thread in the terminal — inside tmux, that thread becomes a first-class
+# deck session. Default: the most recently updated thread in the shared index.
+#
+# Codex may ask two one-key questions on attach (update check, which cwd to
+# resume in) — answer them in the terminal; the key is already lit by then.
+
+emulate -L zsh
+set -u
+
+# Already inside tmux: resuming here would nest a session. Run codex resume in
+# place (the surrounding session is already deck-controllable); if no id was
+# given, codex's own picker handles it. Build the id args as an ARRAY — a glued
+# `${1:+-- "$1"}` expands to one word ("-- <id>") that codex reads as the id.
+if [[ -n "${TMUX:-}" ]]; then
+  local -a idarg
+  [[ -n "${1:-}" ]] && idarg=(-- "$1")
+  exec command codex resume "${idarg[@]}"
+fi
+
+local repo=${0:A:h:h}
+local index="$HOME/.codex/session_index.jsonl"
+local id=${1:-}
+local title=""
+
+if [[ -z "$id" ]]; then
+  [[ -r "$index" ]] || { echo "cxa: no codex thread index at $index" >&2; exit 1; }
+  # Most-recent non-blank line — a trailing newline must not read as "empty".
+  local line
+  line=$(grep -v '^[[:space:]]*$' "$index" | tail -1)
+  [[ -n "$line" ]] || { echo "cxa: thread index is empty" >&2; exit 1; }
+  id=$(node -e 'try{const l=JSON.parse(process.argv[1]);process.stdout.write(l.id||"")}catch{}' "$line")
+  title=$(node -e 'try{const l=JSON.parse(process.argv[1]);process.stdout.write(l.thread_name||"")}catch{}' "$line")
+fi
+[[ -n "$id" ]] || { echo "cxa: could not determine a session id" >&2; exit 1; }
+
+# The index is written by the ChatGPT app (semi-trusted). A hostile id like
+# '--config=sandbox_mode="danger-full-access"' would be parsed by codex as a
+# FLAG, overriding config on the launched agent — so require a real session id
+# (UUID or the app's dash/hex thread-id form) before it ever reaches codex.
+if [[ ! "$id" =~ '^[0-9a-fA-F][0-9a-fA-F-]{7,63}$' ]]; then
+  echo "cxa: refusing an unsafe session id: $id" >&2
+  exit 1
+fi
+
+# Session name: the thread title when we have one, else the id. Sanitized so tmux
+# can target it (glob/prefix metacharacters and '.'/':' are all stripped), and a
+# short hash of the FULL id is appended so two threads with the same 20-char title
+# prefix never collapse onto one key.
+local idtag=${id//[^0-9a-fA-F]/}
+idtag=${idtag[1,6]}
+local raw=${title:-gpt-${id[1,8]}}
+raw=${raw// /-}
+raw=${raw//[][*?.:=]/_}
+raw=${raw[1,20]}
+[[ -n "$raw" ]] || raw=gpt-thread
+local name="${raw}-${idtag}"
+
+# '=' forces tmux exact-match targeting: a dir/thread named `deck` must not
+# resolve to a different session `deck_neo` via prefix/glob matching.
+if ! tmux has-session -t "=$name" 2>/dev/null; then
+  tmux new-session -d -s "$name" codex resume -- "$id" || exit 1
+  # Best-effort: light the key immediately; never block the attach.
+  node "$repo/hooks/codex-notify.mjs" --register --name "$name" || true
+fi
+
+exec tmux attach-session -t "=$name"

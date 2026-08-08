@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.deckneo.daemon</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/path/to/deck_neo/bin/deckneo-daemon.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <!-- launchd plists cannot expand ~ or $HOME, so StandardOutPath/StandardErrorPath
+         below must be your account's literal home directory. -->
+    <key>StandardOutPath</key>
+    <string>/Users/YOU/.deck-neo/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/YOU/.deck-neo/launchd.log</string>
+</dict>
+</plist>

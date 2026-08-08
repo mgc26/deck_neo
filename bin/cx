@@ -1,0 +1,78 @@
+#!/bin/zsh
+# cx [name] [codex args...] — start or attach a tmux session running the OpenAI Codex CLI.
+#
+# Naming mirrors cc: an explicit name (first arg not starting with '-') is
+# attached-or-created; with no name, a second `cx` in the same directory reconnects
+# only to an unattached base session, otherwise starts a fresh distinct one
+# (dir, dir-2, ...). Everything after the name passes through to codex.
+#
+# Codex only reports back when a turn ENDS, so a freshly created session is registered
+# here to light its key immediately. Order: create the tmux session detached, register,
+# then attach — a tmux failure can never leave a phantom lit key, and the record never
+# predates the session the daemon would GC it against. Re-attaching a session that
+# already exists skips registration (its record already exists).
+
+emulate -L zsh
+set -u
+
+# Already inside tmux (e.g. `codex` is aliased to the wrapper): no nesting —
+# run the real binary in place; this session is already deck-controllable.
+if [[ -n "${TMUX:-}" ]]; then
+  local -a inherited
+  inherited=(${(Q)${(z)${DECKNEO_CODEX_ARGS:-}}})
+  exec command codex "${inherited[@]}" "$@"
+fi
+
+# Strip everything tmux can't target: '.'/':' and glob metachars * ? [ ] =.
+sanitize() { local s=${1//[][*?.:=]/_}; [[ -z "$s" ]] && s=session; print -r -- "$s"; }
+
+local explicit=0 name
+if [[ $# -gt 0 && ${1} == "--" ]]; then
+  shift; name=$(sanitize "${PWD:t}")   # "no name, rest are codex args" (from wrapper)
+elif [[ $# -gt 0 && ${1} != -* ]]; then
+  name=$(sanitize "$1"); explicit=1; shift
+else
+  name=$(sanitize "${PWD:t}")
+fi
+
+local repo=${0:A:h:h}
+local -a standing
+standing=(${(Q)${(z)${DECKNEO_CODEX_ARGS:-}}})
+
+# Fails CLOSED (see bin/cc): a query error means "assume attached". '=' forces
+# exact-match targeting so `deck` never resolves to `deck_neo`.
+attached() {
+  local n
+  # `=NAME:` — exact session match + pane target (display-message is pane-level;
+  # a bare '=NAME' returns empty and fails-closed-always). See bin/cc.
+  n=$(tmux display-message -p -t "=$1:" '#{session_attached}' 2>/dev/null) || return 0
+  [[ -z "$n" || "$n" != 0 ]]
+}
+
+# Create a fresh detached codex session named $1 (rest = codex args), register, attach.
+start_fresh() {
+  local sname=$1; shift
+  tmux new-session -d -s "$sname" codex "${standing[@]}" "$@" || exit 1
+  node "$repo/hooks/codex-notify.mjs" --register --name "$sname" || true
+  exec tmux attach-session -t "=$sname"
+}
+
+if (( explicit )); then
+  if tmux has-session -t "=$name" 2>/dev/null; then
+    exec tmux attach-session -t "=$name"   # named reconnect, no re-register
+  fi
+  start_fresh "$name" "$@"
+fi
+
+# No name: reconnect to an unattached base, else create the first free distinct name.
+local base=$name candidate n=1
+while :; do
+  candidate=$base; (( n > 1 )) && candidate="${base}-${n}"
+  if ! tmux has-session -t "=$candidate" 2>/dev/null; then
+    start_fresh "$candidate" "$@"
+  elif ! attached "$candidate"; then
+    exec tmux attach-session -t "=$candidate"
+  fi
+  (( n++ ))
+  (( n > 20 )) && { print -u2 "cx: too many sessions for $base"; exit 1; }
+done
