@@ -453,7 +453,7 @@ describe('SessionStore.markWorking', () => {
   // Pins a known limitation rather than a desired behaviour: the reconcile sweep
   // re-reads every file whether or not it changed, so the override dies within
   // reconcileMs (2s in production) even though codex writes nothing until its
-  // turn ends. Flagged to the lead; change this test if the contract changes.
+  // turn ends. Change this test if the reconciliation contract changes.
   it('is reverted by the reconcile sweep even when no file was written', async () => {
     const { dir, store } = await setup({ reconcileMs: 40 });
     await store.start();
@@ -665,7 +665,7 @@ describe('detached tmux sessions', () => {
   });
 });
 
-describe('security: future-dated ts cannot pin a slot forever (F5)', () => {
+describe('security: future-dated ts cannot pin a slot forever', () => {
   const cleanups: Array<() => Promise<void>> = [];
   afterEach(async () => { for (const c of cleanups.splice(0)) await c(); });
 
@@ -709,12 +709,12 @@ describe('watch-only sessions age out faster (stale ChatGPT-app / no-tmux keys)'
   });
 });
 
-describe('watch-only staleness only applies to terminal states (F6)', () => {
+describe('watch-only staleness only applies to terminal states', () => {
   const cleanups: Array<() => Promise<void>> = [];
   afterEach(async () => { for (const c of cleanups.splice(0)) await c(); });
 
   it('keeps a WORKING watch-only session past the short window', async () => {
-    const dir = await makeTmpDir('deckneo-store-f6-');
+    const dir = await makeTmpDir('deckneo-store-terminal-');
     const store = new SessionStore(dir, { staleMs: HOUR, watchOnlyStaleMs: 1000 });
     cleanups.push(async () => { await store.stop(); await rm(dir, { recursive: true, force: true }); });
     const old = Date.now() - 5000;

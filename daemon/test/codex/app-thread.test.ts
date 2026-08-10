@@ -5,9 +5,8 @@
 // and its environment has no TMUX (verified with `lsof -d cwd` and `ps eww` on
 // the live process). Every notify program it spawns inherits that, and
 // basename('/') is '' — so neither of the two identity sources the adapter
-// prefers can name the session. Four such turns were dropped on 2026-08-05
-// (~/.deck-neo/hook.log, 13:00:56Z–13:02:13Z). No codex turn may be silently
-// dropped: an event that reaches the adapter has to land on some key.
+// prefers can name the session. No Codex turn may be silently dropped: an
+// event that reaches the adapter has to land on some key.
 
 import { readdir } from 'node:fs/promises';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
@@ -30,8 +29,8 @@ import {
 /** What the app-server (and anything else launched by launchd) reports as cwd. */
 const APP_SERVER_CWD = '/';
 const FAKE_TMUX = '/private/tmp/tmux-1000/default,1234,0';
-const THREAD_A = '019fd45d-4392-7b53-876b-f4d7b69fc1ec';
-const THREAD_B = '019fd32f-58f8-7450-a741-cb6078934f93';
+const THREAD_A = '00000000-0000-7000-8000-000000000001';
+const THREAD_B = '00000000-0000-7000-8000-000000000002';
 
 let home: string;
 

@@ -89,7 +89,7 @@ describe.skipIf(!hasTmux)('tmux executor', () => {
     expect(pane).toContain('$(touch /tmp/deckneo-should-not-exist) && echo pwned');
   });
 
-  it('sendText types dash-prefixed text literally, not as send-keys flags (F6)', async () => {
+  it('sendText types dash-prefixed text literally, not as send-keys flags', async () => {
     const s = await startScratch();
     await tmuxSendText(s, '-X not-a-flag');
     const pane = await capture(s);

@@ -10,6 +10,7 @@
   "scripts": {
     "start": "tsx daemon/src/index.ts",
     "demo": "tsx scripts/demo.ts",
+    "preview": "tsx scripts/preview.ts",
     "test": "vitest run",
     "build": "tsc --noEmit"
   },
