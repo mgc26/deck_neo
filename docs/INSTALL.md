@@ -159,6 +159,9 @@ rm ~/.deck-neo/sessions/probe.json
   "keys": {
     "approve": ["Enter"],
     "reject": ["Escape"]
+  },
+  "launch": {
+    "claudeArgs": []
   }
 }
 ```
@@ -172,6 +175,9 @@ rm ~/.deck-neo/sessions/probe.json
 - `keys` — optional. Both default to the values shown; they are the literal `tmux
   send-keys` arguments used for approve and reject, so you can retune them (e.g.
   `["y", "Enter"]`) without touching code.
+- `launch.claudeArgs` — optional. Each entry becomes a separate Claude CLI argument
+  when `+ NEW` starts a session. Keep the empty array unless you deliberately need
+  standing flags on every deck-launched session.
 
 The daemon reloads this file when it changes. If an edit is malformed it keeps the last
 good config and logs the parse error.
@@ -293,12 +299,12 @@ that the paths are absolute, and check `~/.deck-neo/hook.log`.
 started with plain `claude`. Restart it with `cc`.
 
 **A key stays lit for a session I closed.** Slots free themselves when the session reports
-`SessionEnd`, when its tmux session disappears (polled every 10 s — this applies only to
-sessions started under tmux; a plain-`claude` session that dies without `SessionEnd` holds
-its slot until the 24 h staleness rule), or when its state file's timestamp is older than
-24 h. Freed sessions have their state files deleted automatically (ended sessions keep a
-tombstone file for ~60 s so a straggling hook event cannot revive them). A stuck slot can
-always be cleared by deleting its file from `~/.deck-neo/sessions/`.
+`SessionEnd`, when its tmux session disappears (polled every 10 s), or when its state file
+ages out. A watch-only session in `done` or `idle` expires after about 30 minutes; a
+watch-only session still reporting active work can remain for up to 24 hours. Freed
+sessions have their state files deleted automatically (ended sessions keep a tombstone
+file for ~60 s so a straggling hook event cannot revive them). A stuck slot can always be
+cleared by deleting its file from `~/.deck-neo/sessions/`.
 
 **Pressing a session key doesn't bring the window forward.** Window raising uses
 AppleScript via System Events, which needs Accessibility/Automation permission for the

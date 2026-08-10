@@ -271,7 +271,7 @@ describe('idle-nag demotion (waiting-for-input is Ready, not amber)', () => {
   });
 });
 
-describe('idle-nag must not clear a pending prompt (F2)', () => {
+describe('idle-nag must not clear a pending prompt', () => {
   it('keeps a pending permission prompt amber when the idle nag arrives', async () => {
     await runHook('SessionStart', { session_id: 's', cwd: '/tmp/p' }, home);
     await runHook('Notification', { session_id: 's', message: 'Claude needs your permission to use Bash' }, home);

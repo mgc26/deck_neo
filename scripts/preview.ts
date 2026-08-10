@@ -11,8 +11,8 @@ const SCALE = 2;
 const cfg: DeckConfig = {
   projects: [
     { name: 'deck_neo', path: '/tmp/deck_neo' },
-    { name: 'chart_review', path: '/tmp/chart_review' },
-    { name: 'flights', path: '/tmp/flights' },
+    { name: 'api', path: '/tmp/api' },
+    { name: 'web', path: '/tmp/web' },
   ],
   commands: [
     { label: 'CONTINUE', text: 'c' },
@@ -43,9 +43,9 @@ const row1 = keySpecsFor(
     cockpit(
       [
         sess('deck_neo', 'working'), // watch-only working
-        sess('chart_review', 'needs-input', { tmux: 'chart_review' }),
+        sess('api', 'needs-input', { tmux: 'api' }),
         sess('api-2', 'done', { tmux: 'api-2', kind: 'codex' }),
-        sess('flights', 'idle', { tmux: 'flights' }),
+        sess('web', 'idle', { tmux: 'web' }),
       ],
       1,
     ),
@@ -67,7 +67,7 @@ const row2: KeySpec[] = [
 
 const rows = [row1, row2];
 const infobars = [
-  'chart_review ▸ Permission: Bash(npm test)',
+  'api ▸ Permission: Bash(npm test)',
   'api-2 ▸ codex ▸ done',
   'no session selected',
 ];

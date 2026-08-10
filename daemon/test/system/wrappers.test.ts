@@ -89,7 +89,7 @@ describe('nested-tmux guard', () => {
   });
 });
 
-describe('wrapper non-interactive passthrough (F1) and positional prompt (F3)', () => {
+describe('wrapper non-interactive passthrough and positional prompt', () => {
   it('passes -p/--print/--version/--help straight to the real binary (needs no TTY)', async () => {
     for (const flag of ['-p', '--print', '--version', '--help']) {
       const { dir, captureOf } = await shims('claude', 'tmux');

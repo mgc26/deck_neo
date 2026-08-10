@@ -336,9 +336,9 @@ describe('deck-answered prompts flip blue immediately (all kinds)', () => {
   });
 });
 
-describe('security: launch args cannot reach a shell (F2)', () => {
+describe('security: launch args cannot reach a shell', () => {
   it('passes launch.claudeArgs as a separate argv array, never joined', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-f2-'));
+    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-security-'));
     const store = new SessionStore(dir);
     const device = new FakeDevice();
     const calls: unknown[][] = [];

@@ -53,8 +53,8 @@ describe('bin/cxa', () => {
 
   it('resumes the most recent indexed thread, title + id-hash, resume -- id, exact target', async () => {
     await writeIndex([
-      { id: 'old-id', thread_name: 'Old thread', updated_at: '2026-08-01T00:00:00Z' },
-      { id: '019f-abc', thread_name: 'Review the draft plan', updated_at: '2026-08-05T00:00:00Z' },
+      { id: 'old-id', thread_name: 'Old thread', updated_at: '2030-01-01T00:00:00Z' },
+      { id: '019f-abc', thread_name: 'Review the draft plan', updated_at: '2030-01-02T00:00:00Z' },
     ]);
     const { dir, capture } = await tmuxShim();
     await runCxa([], dir);
@@ -112,7 +112,7 @@ describe('bin/cxa', () => {
   });
 });
 
-describe('bin/cxa nested-tmux guard (F5)', () => {
+describe('bin/cxa nested-tmux guard', () => {
   it('does not create a session when already inside tmux', async () => {
     const { dir, capture } = await tmuxShim();
     // A fake codex on PATH so the exec target exists.
@@ -126,7 +126,7 @@ describe('bin/cxa nested-tmux guard (F5)', () => {
   });
 });
 
-describe('bin/cxa nested-tmux resume args (F-B)', () => {
+describe('bin/cxa nested-tmux resume args', () => {
   it('resumes with -- and the id as SEPARATE args, not one glued word', async () => {
     const dir = await tmpDir('deckneo-cxaresume-');
     const capture = join(dir, 'codex.argv');
