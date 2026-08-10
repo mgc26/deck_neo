@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/mgc26/deck_neo/security/policy
+    about: Use the private process in the security policy instead of a public issue.
