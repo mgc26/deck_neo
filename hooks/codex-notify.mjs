@@ -29,9 +29,10 @@ import {
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
-// Generous ceiling: a loaded machine can starve the spawn past 500ms, and a
-// timed-out lookup would misfile the session under its cwd-derived identity.
-const TMUX_TIMEOUT_MS = 2000;
+// A loaded machine can starve the spawn for several seconds. A timed-out lookup
+// is worse than a short delay here: it misfiles the event under its cwd-derived
+// identity and leaves the real session tile stale.
+const TMUX_TIMEOUT_MS = 5000;
 // Long enough for any session name a human types, short enough that
 // `codex-<name>.json` stays well inside the 255-byte filename limit.
 const MAX_NAME_LEN = 96;
