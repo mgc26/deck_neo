@@ -34,10 +34,10 @@ const EVENT_STATES = {
 const SUBAGENT_EVENTS = new Set(['SubagentStart', 'SubagentStop']);
 
 // Generous ceilings: on an idle machine these paths take single-digit ms, but a
-// loaded one (parallel builds, test suites) can starve a child spawn past 500ms —
-// and a timed-out tmux lookup would silently drop the session's control channel.
+// loaded one (parallel builds, test suites) can starve a child spawn for several
+// seconds — and a timed-out tmux lookup silently drops the control channel.
 const STDIN_TIMEOUT_MS = 1000;
-const TMUX_TIMEOUT_MS = 2000;
+const TMUX_TIMEOUT_MS = 5000;
 
 const home = process.env.HOME || homedir();
 const baseDir = join(home, '.deck-neo');
