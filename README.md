@@ -30,7 +30,7 @@ A white border marks the selected session. A `○` prefix marks a watch-only ses
 |---|---|
 | Operating system | macOS |
 | Hardware | Elgato Stream Deck Neo |
-| Runtime | Node 20.19 or newer; Node 22 recommended |
+| Runtime | Node 22.18 or newer |
 | Session control | tmux |
 | Primary integration | Claude Code through the included `cc` wrapper |
 | Optional integration | OpenAI Codex CLI through `cx` or `cxa`, with the limits below |

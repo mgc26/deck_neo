@@ -18,7 +18,7 @@ launchd job (step 5) pins a specific node location at `bin/deckneo-daemon.sh` li
 ## Requirements
 
 - macOS
-- Node 20.19 or newer (`node -v`; one dependency prefers 22.18+)
+- Node 22.18 or newer (`node -v`)
 - Claude Code (`claude -v`) — `bin/cc` starts sessions by running `claude`
 - tmux (`brew install tmux`) — Claude sessions must run inside tmux for the Neo's action
   keys to reach them

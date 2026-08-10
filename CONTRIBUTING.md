@@ -11,7 +11,7 @@ Thanks for helping improve `deck_neo`.
 
 ## Local setup and checks
 
-Use Node 20.19 or newer, then run:
+Use Node 22.18 or newer, then run:
 
 ```sh
 npm ci
