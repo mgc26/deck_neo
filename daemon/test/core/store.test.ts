@@ -169,13 +169,22 @@ describe('SessionStore', () => {
     const { dir, store } = await setup();
     await store.start();
 
-    // Sequential + settled so arrival order is deterministic.
-    for (const id of ['s1', 's2', 's3', 's4', 's5', 's6']) {
+    // Wait for each session to be ingested before writing the next one so the
+    // assertion tests store arrival order rather than watcher scheduling.
+    for (const [slot, id] of ['s1', 's2', 's3', 's4'].entries()) {
       await writeSession(dir, { session_id: id });
-      await settle(60);
+      await waitSession(store, slot, id);
     }
-    await waitUntil(() => store.getState().pageCount === 2, 'a second page to appear');
 
+    await writeSession(dir, { session_id: 's5' });
+    await waitUntil(() => store.getState().pageCount === 2, 'a second page to appear');
+    store.setPage(1);
+    await waitSession(store, 0, 's5');
+
+    await writeSession(dir, { session_id: 's6' });
+    await waitSession(store, 1, 's6');
+
+    store.setPage(0);
     expect(idsOf(store.getState())).toEqual(['s1', 's2', 's3', 's4']); // page 0
     store.setPage(1);
     expect(idsOf(store.getState())).toEqual(['s5', 's6', null, null]); // page 1

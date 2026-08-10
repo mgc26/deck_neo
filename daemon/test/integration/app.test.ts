@@ -381,9 +381,13 @@ describe('paging: select and act on a session on page 2', () => {
 
     await app.handleInput({ type: 'touch', zone: 'right' }); // -> session page 1
     expect(device.last.cockpit.page).toBe(1);
-    await app.handleInput({ type: 'key', index: 0 });   // select s5 (page 1, slot 0)
+    const target = device.last.cockpit.sessions[0];
+    expect(target).not.toBeNull();
+    expect(target?.file.tmux).toBeDefined();
+
+    await app.handleInput({ type: 'key', index: 0 });   // select the rendered page-1 session
     await app.handleInput({ type: 'key', index: 4 });   // approve
-    expect(sys.calls).toContainEqual(['sendKeys', 't5', 'Enter']);
+    expect(sys.calls).toContainEqual(['sendKeys', target!.file.tmux!, 'Enter']);
 
     app.stop();
     await store.stop();
