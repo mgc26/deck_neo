@@ -24,5 +24,11 @@
     "tsx": "^4.23.5",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true,
+    "node-hid@3.4.0": true,
+    "@julusian/jpeg-turbo@3.0.1": true
   }
 }

@@ -162,14 +162,17 @@ rm ~/.deck-neo/sessions/probe.json
   },
   "launch": {
     "claudeArgs": []
+  },
+  "focus": {
+    "appName": "Cursor"
   }
 }
 ```
 
 - `projects` — the launcher's picker shows the **first 4**. `name` is only the label
   drawn on the picker key; the tmux session (and what the focus action matches against
-  Cursor window titles) is always the **directory basename** of `path`, which is also
-  what the hook reports for sessions you start yourself with `cc`.
+  the target app's window titles) is always the **directory basename** of `path`, which
+  is also what the hook reports for sessions you start yourself with `cc`.
 - `commands` — page 2 shows up to 8. **`commands[0]` is also the cockpit CONTINUE key**,
   so put your most-used follow-up first.
 - `keys` — optional. Both default to the values shown; they are the literal `tmux
@@ -178,6 +181,11 @@ rm ~/.deck-neo/sessions/probe.json
 - `launch.claudeArgs` — optional. Each entry becomes a separate Claude CLI argument
   when `+ NEW` starts a session. Keep the empty array unless you deliberately need
   standing flags on every deck-launched session.
+- `focus.appName` — optional, defaults to `"Cursor"`. The app whose windows are searched
+  when a session key is pressed. Set it to `"iTerm2"` or `"Terminal"` if you run `cc`
+  in a standalone terminal instead of Cursor's integrated one — matching works the same
+  way, by the project's directory basename appearing in the window title, so it depends
+  on your terminal showing that in its title/tab (iTerm2 and Terminal do by default).
 
 The daemon reloads this file when it changes. If an edit is malformed it keeps the last
 good config and logs the parse error.
@@ -241,14 +249,17 @@ have no other Elgato devices, simply disable the app's "launch at login" instead
 **Recommended: install it as a login service** (auto-starts at login, auto-restarts on
 crash, and performs the step-4 claim dance by itself):
 
-Edit `launchd/com.deckneo.daemon.plist` first — replace its `/path/to/deck_neo` and
-`/Users/YOU` placeholders with your real repo path and home directory (launchd plists
-can't expand `~` or `$HOME`), then:
+`bin/install-launchd.sh` generates `~/Library/LaunchAgents/com.deckneo.daemon.plist`
+from the repo's template, substituting your real repo path and home directory in place
+of its `/path/to/deck_neo` and `/Users/YOU` placeholders (launchd plists can't expand
+`~` or `$HOME`, so this has to happen somewhere — the script saves you the manual edit):
 
 ```sh
-cp /path/to/deck_neo/launchd/com.deckneo.daemon.plist ~/Library/LaunchAgents/
+bin/install-launchd.sh
 launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.deckneo.daemon.plist
 ```
+
+Re-run `bin/install-launchd.sh` any time the repo moves.
 
 Manage it with `launchctl kickstart -k gui/$(id -u)/com.deckneo.daemon` (restart) and
 `launchctl bootout gui/$(id -u)/com.deckneo.daemon` (stop). Logs: `~/.deck-neo/daemon.log`.
@@ -311,7 +322,9 @@ AppleScript via System Events, which needs Accessibility/Automation permission f
 process running the daemon (System Settings → Privacy & Security → Accessibility, and →
 Automation). Selection still works without it; only the focus step is skipped. Sessions
 launched detached by the `+ NEW` key have no window to raise until you attach with
-`cc <name>`.
+`cc <name>`. If you run `cc` in iTerm2, Terminal, or another terminal app instead of
+Cursor, set `focus.appName` in `config.json` (see above) — otherwise it keeps searching
+Cursor's windows and never finds a match.
 
 **The daemon logs `disconnected` in a loop.** The Stream Deck app is running (step 4), or
 the Neo is on a hub that dropped it. Unplug/replug and check `npm start` output.

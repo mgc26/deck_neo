@@ -29,7 +29,7 @@ export interface SystemPorts {
   sendText(session: string, text: string): Promise<void>;
   listSessions(): Promise<TmuxSession[]>;
   newSession(name: string, cwd: string, command: string, args?: string[]): Promise<void>;
-  focus(project: string): Promise<boolean>;
+  focus(project: string, appName?: string, tmuxSession?: string): Promise<boolean>;
 }
 
 export interface DevicePort {
@@ -146,8 +146,9 @@ export class AppController {
         this.store.select(effect.slot);
         break;
       case 'focus': {
-        const found = await this.sys.focus(effect.project);
-        if (!found) this.setFlash(-1, `no Cursor window for ${effect.project}`);
+        const appName = this.getConfig().focus?.appName ?? 'Cursor';
+        const found = await this.sys.focus(effect.project, appName, effect.tmux);
+        if (!found) this.setFlash(-1, `no ${appName} window for ${effect.project}`);
         break;
       }
       case 'approve':

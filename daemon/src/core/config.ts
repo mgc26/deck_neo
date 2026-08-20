@@ -99,6 +99,15 @@ export function parseConfig(json: string): DeckConfig {
     config.launch = launch;
   }
 
+  if (root.focus !== undefined) {
+    if (!isRecord(root.focus)) fail('focus must be an object');
+    const focus: DeckConfig['focus'] = {};
+    if (root.focus.appName !== undefined) {
+      focus.appName = stringField(root.focus, 'appName', 'focus');
+    }
+    config.focus = focus;
+  }
+
   return config;
 }
 
