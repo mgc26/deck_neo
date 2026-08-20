@@ -11,6 +11,8 @@
     "start": "tsx daemon/src/index.ts",
     "demo": "tsx scripts/demo.ts",
     "preview": "tsx scripts/preview.ts",
+    "init-config": "tsx scripts/init-config.ts",
+    "check-hooks": "tsx scripts/check-hooks.ts",
     "test": "vitest run",
     "build": "tsc --noEmit"
   },

@@ -47,8 +47,8 @@ The daemon opens the Neo directly over USB. The Elgato Stream Deck app must rele
    npm install
    ```
 
-2. Merge the included Claude Code hooks into `~/.claude/settings.json`.
-3. Create `~/.deck-neo/config.json` with your projects, commands, and key sequences.
+2. Run `npm run check-hooks` and merge the hooks it prints into `~/.claude/settings.json`.
+3. Run `npm run init-config` to create `~/.deck-neo/config.json` with your projects and commands.
 4. Install `bin/cc` as a shell alias so Claude sessions start inside tmux.
 5. Quit the Elgato Stream Deck app, then run `npm start` so the daemon claims the Neo.
 6. Optionally install the included launchd service for automatic startup and reconnects.
