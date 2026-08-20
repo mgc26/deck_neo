@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { focusCursorWindow } from '../../src/system/focus.js';
+import { focusAppWindow } from '../../src/system/focus.js';
 import * as tmux from '../../src/system/tmux.js';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -38,10 +38,10 @@ describe('system/tmux surface', () => {
 });
 
 describe('system/focus surface', () => {
-  it('exports focusCursorWindow(project) -> Promise<boolean>', async () => {
-    expect(typeof focusCursorWindow).toBe('function');
-    expect(focusCursorWindow.length).toBe(1);
-    const result = await focusCursorWindow('deck_neo', { appName: 'DeckNeoNoSuchApp7f3a' });
+  it('exports focusAppWindow(project) -> Promise<boolean>', async () => {
+    expect(typeof focusAppWindow).toBe('function');
+    expect(focusAppWindow.length).toBe(1);
+    const result = await focusAppWindow('deck_neo', { appName: 'DeckNeoNoSuchApp7f3a' });
     expect(typeof result).toBe('boolean');
   });
 });

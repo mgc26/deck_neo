@@ -245,3 +245,18 @@ describe('launch config', () => {
       .toThrow(/invalid config/);
   });
 });
+
+describe('focus config', () => {
+  it('accepts focus.appName as a string', () => {
+    const cfg = parseConfig(JSON.stringify({
+      projects: [], commands: [],
+      focus: { appName: 'iTerm2' },
+    }));
+    expect(cfg.focus?.appName).toBe('iTerm2');
+  });
+
+  it('rejects a non-string focus.appName', () => {
+    expect(() => parseConfig(JSON.stringify({ projects: [], commands: [], focus: { appName: 1 } })))
+      .toThrow(/invalid config/);
+  });
+});

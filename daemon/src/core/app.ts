@@ -110,7 +110,7 @@ function cockpitKey(
       ui,
       effects: [
         { kind: 'select', slot: index },
-        { kind: 'focus', project: session.file.project },
+        { kind: 'focus', project: session.file.project, tmux: session.file.tmux },
       ],
     };
   }

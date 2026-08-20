@@ -43,6 +43,11 @@ export interface DeckConfig {
     claudeArgs?: string[];  // standing flags for + NEW launches (the daemon runs
                             // under launchd and never sees shell-alias env vars)
   };
+  focus?: {
+    appName?: string;      // app to raise on session-key press; default 'Cursor'
+                            // (e.g. 'iTerm2', 'Terminal' — anything whose window
+                            // title contains the project's directory basename)
+  };
 }
 
 // ---- System model (tmux -> core) ----
@@ -75,7 +80,7 @@ export type RawInput =
 
 export type Effect =
   | { kind: 'select'; slot: number }
-  | { kind: 'focus'; project: string }
+  | { kind: 'focus'; project: string; tmux?: string }
   | { kind: 'approve'; tmux: string; agent: AgentKind; sessionId: string }
   | { kind: 'reject'; tmux: string; agent: AgentKind; sessionId: string }
   | { kind: 'send-text'; tmux: string; text: string; agent: AgentKind; sessionId: string }

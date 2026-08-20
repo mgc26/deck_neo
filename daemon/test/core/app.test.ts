@@ -251,7 +251,7 @@ describe('reduceInput — agent tagging', () => {
   it('leaves select/focus/launch untagged — they are kind-agnostic', () => {
     expect(reduceInput(COCKPIT, key(0), codex, cfg).effects).toEqual([
       { kind: 'select', slot: 0 },
-      { kind: 'focus', project: 'api' },
+      { kind: 'focus', project: 'api', tmux: 'api-tmux' },
     ]);
     expect(reduceInput(PICKER, key(0), codex, cfg).effects).toEqual([
       { kind: 'launch', project: { name: 'api', path: '/tmp/api' } },

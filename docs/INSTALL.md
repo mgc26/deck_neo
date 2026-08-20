@@ -10,10 +10,13 @@ Repo path used throughout this document:
 ```
 
 Substitute your own absolute path — the hook commands must be absolute, because Claude
-Code runs them from the session's working directory. Node's path matters too: the
-launchd job (step 5) pins a specific node location at `bin/deckneo-daemon.sh` line ~15
-(`$HOME/.hermes/node/bin` is one install layout); replace it with wherever your own
-`node` lives (`which node`).
+Code runs them from the session's working directory. `node` and `claude`'s paths matter
+too: the launchd job (step 5) pins specific locations at `bin/deckneo-daemon.sh` line ~15
+(`$HOME/.hermes/node/bin` for node, `$HOME/.local/bin` for claude — one install layout
+each); replace them with wherever your own `node` and `claude` live (`which node`,
+`which claude`). Get either wrong and +NEW fails silently — `tmux new-session -d`
+reports success without waiting for the exec, so a `claude` it can't find just makes
+the session spin up and immediately die.
 
 ## Requirements
 
@@ -33,9 +36,20 @@ npm install
 
 ## 1. Wire the state-reporting hooks
 
-The daemon learns what your sessions are doing from seven Claude Code hooks. Add the
-`hooks` block below to `~/.claude/settings.json`. If that file already exists, merge this
-`hooks` key into it rather than replacing the file (keep your other settings).
+The daemon learns what your sessions are doing from seven Claude Code hooks, added to
+`~/.claude/settings.json`. That file is shared with the rest of your Claude Code setup
+and often hand-customized, so nothing here writes to it for you — run
+
+```sh
+npm run check-hooks
+```
+
+and it tells you exactly which of the seven are missing or stale (pointing at an old
+repo path) and prints only the JSON to merge in, with the paths already filled in for
+this checkout. Merge it into the `hooks` key rather than replacing the file — if the
+`hooks` key already exists, add these event keys into it, keeping your other settings.
+
+Every event needs the same shape, one hooks entry per event name:
 
 ```json
 {
@@ -49,70 +63,25 @@ The daemon learns what your sessions are doing from seven Claude Code hooks. Add
           }
         ]
       }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs UserPromptSubmit"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs Notification"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs Stop"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs SessionEnd"
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs SubagentStart"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/node /path/to/deck_neo/hooks/report-state.mjs SubagentStop"
-          }
-        ]
-      }
     ]
   }
 }
 ```
+
+...repeated for `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd`,
+`SubagentStart`, and `SubagentStop` (swap the event name in both places). `check-hooks`
+prints all seven filled in — merging in by hand:
+
+- **No `"hooks"` key yet** (or no `~/.claude/settings.json` at all) — paste
+  `check-hooks`' output as-is.
+- **`"hooks"` key already exists** — copy each `"EventName": [ ... ]` entry it prints
+  into your existing `"hooks"` object, alongside whatever's already there.
+
+(An event that already has another tool's hook on it, or one `check-hooks` flags as
+stale, needs a small variation — see Troubleshooting.)
+
+Validate the file afterward by re-running `npm run check-hooks` — it should report
+`hooks ✓ (7/7)`.
 
 Event → light mapping. The rule for green: **green means everything is finished** — a
 session whose main turn ended but still has background agents out stays blue.
@@ -142,6 +111,19 @@ rm ~/.deck-neo/sessions/probe.json
 
 ## 2. Create `~/.deck-neo/config.json`
 
+This file belongs entirely to Deck Neo, so unlike the hooks above it's safe to generate.
+Run
+
+```sh
+npm run init-config
+```
+
+and answer its prompts for projects, commands, and (optionally) the focus target app and
+standing launch args — it validates the result before writing, sets `chmod 600`, and
+backs up any existing file to `config.json.bak` first. Running it again later just
+starts over from a fresh prompt. To hand-edit instead, or to see what the fields mean,
+here's the shape it produces:
+
 ```json
 {
   "projects": [
@@ -162,14 +144,17 @@ rm ~/.deck-neo/sessions/probe.json
   },
   "launch": {
     "claudeArgs": []
+  },
+  "focus": {
+    "appName": "Cursor"
   }
 }
 ```
 
 - `projects` — the launcher's picker shows the **first 4**. `name` is only the label
   drawn on the picker key; the tmux session (and what the focus action matches against
-  Cursor window titles) is always the **directory basename** of `path`, which is also
-  what the hook reports for sessions you start yourself with `cc`.
+  the target app's window titles) is always the **directory basename** of `path`, which
+  is also what the hook reports for sessions you start yourself with `cc`.
 - `commands` — page 2 shows up to 8. **`commands[0]` is also the cockpit CONTINUE key**,
   so put your most-used follow-up first.
 - `keys` — optional. Both default to the values shown; they are the literal `tmux
@@ -178,6 +163,15 @@ rm ~/.deck-neo/sessions/probe.json
 - `launch.claudeArgs` — optional. Each entry becomes a separate Claude CLI argument
   when `+ NEW` starts a session. Keep the empty array unless you deliberately need
   standing flags on every deck-launched session.
+- `focus.appName` — optional, defaults to `"Cursor"`. The app whose windows are searched
+  when a session key is pressed. Set it to `"iTerm2"` or `"Terminal"` if you run `cc`
+  in a standalone terminal instead of Cursor's integrated one — matching works the same
+  way, by the project's directory basename appearing in the window title, so it depends
+  on your terminal showing that in its title/tab (iTerm2 and Terminal do by default).
+  With `"iTerm2"` or `"Terminal"`, `+ NEW` also opens a new window attached to the
+  session it just started. For every other target (e.g. `"Cursor"`, the default) you're
+  expected to already have a window open for the project, since deck_neo only raises
+  existing windows there, never opens them.
 
 The daemon reloads this file when it changes. If an edit is malformed it keeps the last
 good config and logs the parse error.
@@ -241,14 +235,17 @@ have no other Elgato devices, simply disable the app's "launch at login" instead
 **Recommended: install it as a login service** (auto-starts at login, auto-restarts on
 crash, and performs the step-4 claim dance by itself):
 
-Edit `launchd/com.deckneo.daemon.plist` first — replace its `/path/to/deck_neo` and
-`/Users/YOU` placeholders with your real repo path and home directory (launchd plists
-can't expand `~` or `$HOME`), then:
+`bin/install-launchd.sh` generates `~/Library/LaunchAgents/com.deckneo.daemon.plist`
+from the repo's template, substituting your real repo path and home directory in place
+of its `/path/to/deck_neo` and `/Users/YOU` placeholders (launchd plists can't expand
+`~` or `$HOME`, so this has to happen somewhere — the script saves you the manual edit):
 
 ```sh
-cp /path/to/deck_neo/launchd/com.deckneo.daemon.plist ~/Library/LaunchAgents/
+bin/install-launchd.sh
 launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.deckneo.daemon.plist
 ```
+
+Re-run `bin/install-launchd.sh` any time the repo moves.
 
 Manage it with `launchctl kickstart -k gui/$(id -u)/com.deckneo.daemon` (restart) and
 `launchctl bootout gui/$(id -u)/com.deckneo.daemon` (stop). Logs: `~/.deck-neo/daemon.log`.
@@ -291,9 +288,17 @@ Cockpit layout:
 ## Troubleshooting
 
 **Keys never light up.** Check `~/.deck-neo/sessions/` for JSON files. Empty means the
-hooks are not firing: confirm the `hooks` block in `~/.claude/settings.json` is valid JSON
-(`node -e 'JSON.parse(require("fs").readFileSync(process.env.HOME + "/.claude/settings.json","utf8"))'`),
-that the paths are absolute, and check `~/.deck-neo/hook.log`.
+hooks are not firing: run `npm run check-hooks` to confirm all seven are wired with
+current paths, and check `~/.deck-neo/hook.log`.
+
+**An event `check-hooks` flags is already present, with other hooks on it** (e.g. a
+linter hook already runs on `Stop`). Don't replace that event's array — append the
+single `{ "hooks": [{ "type": "command", "command": "..." }] }` object `check-hooks`
+printed as one more entry in it, so both hooks run.
+
+**`check-hooks` reports a hook as "stale"** (wired, but to an old repo path). Find that
+exact `command` string under the matching event and replace just that string with the
+corrected one shown — leave the rest of the array untouched.
 
 **Keys light up but APPROVE/STOP flash red.** That session has no `tmux` field — it was
 started with plain `claude`. Restart it with `cc`.
@@ -311,7 +316,9 @@ AppleScript via System Events, which needs Accessibility/Automation permission f
 process running the daemon (System Settings → Privacy & Security → Accessibility, and →
 Automation). Selection still works without it; only the focus step is skipped. Sessions
 launched detached by the `+ NEW` key have no window to raise until you attach with
-`cc <name>`.
+`cc <name>`. If you run `cc` in iTerm2, Terminal, or another terminal app instead of
+Cursor, set `focus.appName` in `config.json` (see above) — otherwise it keeps searching
+Cursor's windows and never finds a match.
 
 **The daemon logs `disconnected` in a loop.** The Stream Deck app is running (step 4), or
 the Neo is on a hub that dropped it. Unplug/replug and check `npm start` output.

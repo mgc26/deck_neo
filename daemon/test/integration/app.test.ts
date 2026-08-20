@@ -49,6 +49,7 @@ function fakeSys(): SystemPorts & { calls: Array<Array<string | string[]>>; tmux
       calls.push(args && args.length ? ['newSession', name, cwd, command, args] : ['newSession', name, cwd, command]);
     },
     async focus(project: string) { calls.push(['focus', project]); return true; },
+    async openWindow(session: string, appName: string) { calls.push(['openWindow', session, appName]); return true; },
   };
   return sys;
 }
@@ -308,6 +309,75 @@ describe('launch standing args', () => {
     expect(sys.calls).toContainEqual([
       'newSession', 'demo', '/tmp/demo', 'claude', ['--dangerously-skip-permissions'],
     ]);
+    app.stop();
+    await store.stop();
+    await rm(dir, { recursive: true, force: true });
+  });
+});
+
+describe('launch opens a window for iTerm2/Terminal targets only', () => {
+  it('opens an iTerm2 window after starting the session when focus.appName is iTerm2', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-iterm-'));
+    const store = new SessionStore(dir);
+    const device = new FakeDevice();
+    const sys = fakeSys();
+    const cfg: DeckConfig = { ...config, focus: { appName: 'iTerm2' } };
+    const app = new AppController(store, () => cfg, device, sys, { flashMs: 50 });
+    await store.start();
+    await app.handleInput({ type: 'key', index: 7 });
+    await app.handleInput({ type: 'key', index: 0 });
+    expect(sys.calls).toContainEqual(['newSession', 'demo', '/tmp/demo', 'claude']);
+    expect(sys.calls).toContainEqual(['openWindow', 'demo', 'iTerm2']);
+    app.stop();
+    await store.stop();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('opens a Terminal window after starting the session when focus.appName is Terminal', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-terminal-'));
+    const store = new SessionStore(dir);
+    const device = new FakeDevice();
+    const sys = fakeSys();
+    const cfg: DeckConfig = { ...config, focus: { appName: 'Terminal' } };
+    const app = new AppController(store, () => cfg, device, sys, { flashMs: 50 });
+    await store.start();
+    await app.handleInput({ type: 'key', index: 7 });
+    await app.handleInput({ type: 'key', index: 0 });
+    expect(sys.calls).toContainEqual(['newSession', 'demo', '/tmp/demo', 'claude']);
+    expect(sys.calls).toContainEqual(['openWindow', 'demo', 'Terminal']);
+    app.stop();
+    await store.stop();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not attempt to open a window for the default (Cursor) target', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-cursor-'));
+    const store = new SessionStore(dir);
+    const device = new FakeDevice();
+    const sys = fakeSys();
+    const app = new AppController(store, () => config, device, sys, { flashMs: 50 });
+    await store.start();
+    await app.handleInput({ type: 'key', index: 7 });
+    await app.handleInput({ type: 'key', index: 0 });
+    expect(sys.calls).toContainEqual(['newSession', 'demo', '/tmp/demo', 'claude']);
+    expect(sys.calls.some((c) => c[0] === 'openWindow')).toBe(false);
+    app.stop();
+    await store.stop();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('flashes when the iTerm2 window fails to open', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'deckneo-int-iterm-fail-'));
+    const store = new SessionStore(dir);
+    const device = new FakeDevice();
+    const sys = fakeSys();
+    sys.openWindow = async () => false;
+    const cfg: DeckConfig = { ...config, focus: { appName: 'iTerm2' } };
+    const app = new AppController(store, () => cfg, device, sys, { flashMs: 50 });
+    await store.start();
+    await app.handleInput({ type: 'key', index: 7 });
+    await app.handleInput({ type: 'key', index: 0 });
+    expect(device.last.infobar).toContain('could not open iTerm2 window for demo');
     app.stop();
     await store.stop();
     await rm(dir, { recursive: true, force: true });
