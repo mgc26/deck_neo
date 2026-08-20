@@ -9,7 +9,7 @@ import { AppController } from './appController.js';
 import { ConfigWatcher } from './core/config.js';
 import { SessionStore } from './core/store.js';
 import { NeoDevice } from './device/neo.js';
-import { focusAppWindow } from './system/focus.js';
+import { focusAppWindow, openAppWindow } from './system/focus.js';
 import {
   tmuxListSessions,
   tmuxNewSession,
@@ -42,6 +42,7 @@ const app = new AppController(store, () => config.getConfig(), device, {
   listSessions: tmuxListSessions,
   newSession: tmuxNewSession,
   focus: (project, appName, tmuxSession) => focusAppWindow(project, { appName, tmuxSession }),
+  openWindow: (session, appName) => openAppWindow(session, appName),
 });
 
 store.on('change', () => void app.refresh());

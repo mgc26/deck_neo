@@ -2,6 +2,7 @@
 // Owns transient UI concerns: current page, error flashes, infobar composition.
 
 import { basename } from 'node:path';
+import { supportsWindowOpen } from './system/focus.js';
 import type {
   AgentKind,
   CockpitState,
@@ -30,6 +31,10 @@ export interface SystemPorts {
   listSessions(): Promise<TmuxSession[]>;
   newSession(name: string, cwd: string, command: string, args?: string[]): Promise<void>;
   focus(project: string, appName?: string, tmuxSession?: string): Promise<boolean>;
+  /** Opens a terminal window attached to a freshly launched session. Only ever called
+   * for focus targets that support it (iTerm2, Terminal) — other targets (Cursor) are
+   * expected to already have a window open, so there is nothing to do for them. */
+  openWindow?(session: string, appName: string): Promise<boolean>;
 }
 
 export interface DevicePort {
@@ -172,6 +177,16 @@ export class AppController {
         // hostile config value into RCE. (SystemPorts.newSession keeps them split.)
         const args = this.getConfig().launch?.claudeArgs ?? [];
         await this.sys.newSession(name, effect.project.path, this.opts.launchCommand, args);
+
+        // A detached tmux session has no window of its own. For Cursor the
+        // assumption is you already have one open; for iTerm2/Terminal there's no
+        // such assumption, so open one here or the focus key will never find
+        // anything to raise.
+        const appName = this.getConfig().focus?.appName ?? 'Cursor';
+        if (supportsWindowOpen(appName)) {
+          const opened = await this.sys.openWindow?.(name, appName);
+          if (!opened) this.setFlash(-1, `could not open ${appName} window for ${name}`);
+        }
         break;
       }
       case 'set-session-page':

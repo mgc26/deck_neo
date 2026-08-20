@@ -10,10 +10,13 @@ Repo path used throughout this document:
 ```
 
 Substitute your own absolute path — the hook commands must be absolute, because Claude
-Code runs them from the session's working directory. Node's path matters too: the
-launchd job (step 5) pins a specific node location at `bin/deckneo-daemon.sh` line ~15
-(`$HOME/.hermes/node/bin` is one install layout); replace it with wherever your own
-`node` lives (`which node`).
+Code runs them from the session's working directory. `node` and `claude`'s paths matter
+too: the launchd job (step 5) pins specific locations at `bin/deckneo-daemon.sh` line ~15
+(`$HOME/.hermes/node/bin` for node, `$HOME/.local/bin` for claude — one install layout
+each); replace them with wherever your own `node` and `claude` live (`which node`,
+`which claude`). Get either wrong and +NEW fails silently — `tmux new-session -d`
+reports success without waiting for the exec, so a `claude` it can't find just makes
+the session spin up and immediately die.
 
 ## Requirements
 
@@ -165,6 +168,10 @@ here's the shape it produces:
   in a standalone terminal instead of Cursor's integrated one — matching works the same
   way, by the project's directory basename appearing in the window title, so it depends
   on your terminal showing that in its title/tab (iTerm2 and Terminal do by default).
+  With `"iTerm2"` or `"Terminal"`, `+ NEW` also opens a new window attached to the
+  session it just started. For every other target (e.g. `"Cursor"`, the default) you're
+  expected to already have a window open for the project, since deck_neo only raises
+  existing windows there, never opens them.
 
 The daemon reloads this file when it changes. If an edit is malformed it keeps the last
 good config and logs the parse error.

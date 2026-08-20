@@ -103,7 +103,7 @@ No top-row session state renders red. Dim action keys are informational rather t
 ## Development
 
 ```sh
-npm test       # 381 unit, contract, integration, and system tests
+npm test       # 386 unit, contract, integration, and system tests
 npm run build  # strict TypeScript check
 npm run demo   # synthetic session timeline for filming or hardware review
 ```
@@ -116,6 +116,7 @@ The automated suite uses fake device and system adapters, so CI does not require
 - The official Elgato app takes exclusive USB access if it opens the Neo first; installation documents the required claim order.
 - Action keys require a session started or resumed inside tmux.
 - Window raising currently targets Cursor through macOS System Events and requires Accessibility/Automation permission. Selection and tmux input still work without it.
+- `+ NEW` only opens a window for you when `focus.appName` is `"iTerm2"` or `"Terminal"`. With any other target (including the `"Cursor"` default), it starts the tmux session headlessly and expects you to already have a window open for the project.
 - Codex CLI has completion-only notifications, no amber permission state, and no `+ NEW` integration.
 - Session names are the control identity. Parallel sessions in the same project need explicit distinct names such as `cx api` and `cx api-2`.
 

@@ -10,11 +10,16 @@
 
 set -u
 
-# launchd provides a bare PATH: pin node (hermes install) and homebrew (tmux —
-# the daemon spawns it for the action keys).
-# `.hermes/node` is this machine's install layout, not a requirement. Point it at
-# wherever your own node lives (`which node`), or the daemon will fail to start.
-export PATH="$HOME/.hermes/node/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# launchd provides a bare PATH: pin node (hermes install), homebrew (tmux — the
+# daemon spawns it for the action keys), and ~/.local/bin (where the Claude Code
+# CLI's official installer puts `claude` — the +NEW command tmux runs). Without
+# it, `tmux new-session -d` still reports success (it doesn't wait for the exec),
+# so a missing `claude` fails completely silently: the session spins up and
+# self-destructs the instant the pane's command can't be found.
+# `.hermes/node` is this machine's install layout, not a requirement. Point these at
+# wherever your own `node` and `claude` live (`which node`, `which claude`), or +NEW
+# will silently do nothing.
+export PATH="$HOME/.hermes/node/bin:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 
 REPO="${0:A:h:h}"
 LOG="$HOME/.deck-neo/daemon.log"
