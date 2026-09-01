@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@elgato-stream-deck/node": "^7.6.3",
-    "@napi-rs/canvas": "^1.0.3",
+    "@napi-rs/canvas": "^1.0.8",
     "chokidar": "^5.0.0"
   },
   "devDependencies": {
